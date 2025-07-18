@@ -3,12 +3,8 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
-// Dodaj debugging
-error_reporting(E_ALL);
-ini_set('display_errors', 1);
-
 if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'admin') {
-    header('Location: /domeny/auth/login.php');
+    header('Location: ../auth/login.php');
     exit;
 }
 
@@ -23,6 +19,15 @@ if (!$fileName || !file_exists($logFile)) {
 $content = file_get_contents($logFile);
 $lines = explode("\n", $content);
 $lines = array_reverse($lines); // Najnowsze na górze
+
+// Obsługa pobierania pliku
+if (isset($_GET['download']) && $_GET['download'] == '1') {
+    header('Content-Type: application/octet-stream');
+    header('Content-Disposition: attachment; filename="' . $fileName . '"');
+    header('Content-Length: ' . filesize($logFile));
+    readfile($logFile);
+    exit;
+}
 ?>
 
 <!DOCTYPE html>
@@ -63,11 +68,115 @@ $lines = array_reverse($lines); // Najnowsze na górze
     </style>
 </head>
 <body>
-    <?php include '../includes/navbar.php'; ?>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="../index.php">
+                <i class="fas fa-globe"></i> Domain Monitor
+            </a>
+            
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="../index.php">
+                            <i class="fas fa-tachometer-alt"></i> Dashboard
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="../domains/">
+                            <i class="fas fa-list"></i> Domeny
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="../favorites.php">
+                            <i class="fas fa-heart"></i> Ulubione
+                        </a>
+                    </li>
+                    <?php if ($_SESSION['role'] === 'admin'): ?>
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                            <i class="fas fa-cog"></i> Administracja
+                        </a>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="categories.php">Kategorie</a></li>
+                            <li><a class="dropdown-item" href="users.php">Użytkownicy</a></li>
+                            <li><a class="dropdown-item" href="config.php">Konfiguracja</a></li>
+                            <li><a class="dropdown-item" href="logs.php">Logi</a></li>
+                        </ul>
+                    </li>
+                    <?php endif; ?>
+                </ul>
+                
+                <ul class="navbar-nav">
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                            <i class="fas fa-user"></i> <?php echo htmlspecialchars($_SESSION['username']); ?>
+                        </a>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="../profile.php">Profil</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="../auth/logout.php">Wyloguj</a></li>
+                        </ul>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
 
     <div class="container-fluid">
         <div class="row">
-            <?php include '../includes/sidebar.php'; ?>
+            <nav id="sidebarMenu" class="col-md-3 col-lg-2 d-md-block bg-light sidebar collapse">
+                <div class="position-sticky pt-3">
+                    <ul class="nav flex-column">
+                        <li class="nav-item">
+                            <a class="nav-link" href="../index.php">
+                                <i class="fas fa-tachometer-alt"></i> Dashboard
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="../domains/">
+                                <i class="fas fa-list"></i> Wszystkie domeny
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="../favorites.php">
+                                <i class="fas fa-heart"></i> Ulubione
+                            </a>
+                        </li>
+                    </ul>
+
+                    <?php if ($_SESSION['role'] === 'admin'): ?>
+                    <h6 class="sidebar-heading d-flex justify-content-between align-items-center px-3 mt-4 mb-1 text-muted">
+                        <span>Administracja</span>
+                    </h6>
+                    <ul class="nav flex-column mb-2">
+                        <li class="nav-item">
+                            <a class="nav-link" href="categories.php">
+                                <i class="fas fa-tags"></i> Kategorie
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="users.php">
+                                <i class="fas fa-users"></i> Użytkownicy
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="config.php">
+                                <i class="fas fa-cog"></i> Konfiguracja
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link active" href="logs.php">
+                                <i class="fas fa-file-alt"></i> Logi
+                            </a>
+                        </li>
+                    </ul>
+                    <?php endif; ?>
+                </div>
+            </nav>
             
             <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
                 <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
@@ -124,14 +233,3 @@ $lines = array_reverse($lines); // Najnowsze na górze
     <script src="../assets/js/app.js"></script>
 </body>
 </html>
-
-<?php
-// Obsługa pobierania pliku
-if (isset($_GET['download']) && $_GET['download'] == '1') {
-    header('Content-Type: application/octet-stream');
-    header('Content-Disposition: attachment; filename="' . $fileName . '"');
-    header('Content-Length: ' . filesize($logFile));
-    readfile($logFile);
-    exit;
-}
-?>
