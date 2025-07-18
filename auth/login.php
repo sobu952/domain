@@ -1,5 +1,7 @@
 <?php
-session_start();
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
 
 // Sprawdź czy system jest zainstalowany
 if (!file_exists('../config/config.php')) {
